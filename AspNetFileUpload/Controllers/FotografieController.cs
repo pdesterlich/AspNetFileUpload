@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using AspNetFileUpload.Models;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +21,8 @@ namespace AspNetFileUpload.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var fotografie = await _context.Fotografie.ToListAsync(); 
+            var fotografie = await _context.Fotografie.Select(x => new {x.Id, x.FileName}).ToListAsync();
+
             return Ok(fotografie);
         }
 
@@ -48,7 +50,7 @@ namespace AspNetFileUpload.Controllers
             var fotografia = new Fotografia
             {
                 Content = stream.ToArray(),
-                FileName = file.Name,
+                FileName = file.FileName,
                 ContentType = file.ContentType
             };
 
