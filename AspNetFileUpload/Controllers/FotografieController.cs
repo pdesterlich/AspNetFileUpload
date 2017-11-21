@@ -27,11 +27,12 @@ namespace AspNetFileUpload.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<FileStreamResult> Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
             var fotografia = await _context.Fotografie.FirstOrDefaultAsync(x => x.Id == id);
 
-            // TODO: aggiungere gestione errore
+            if (fotografia == null)
+                return NotFound();
             
             var stream = new MemoryStream(fotografia.Content);
             
