@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using AspNetFileUpload.Models;
+using AspNetFileUpload.Rabbit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,15 +10,19 @@ using Microsoft.EntityFrameworkCore;
 namespace AspNetFileUpload.Controllers
 {
     [Route("api/fotografie")]
-    public class FotografieController: Controller
+    public class FotografieController : Controller
     {
         private readonly DatabaseContext _context;
+        private readonly IMessageQueueAccessLayer _rabbit;
 
-        public FotografieController(DatabaseContext context)
+        public FotografieController(
+            DatabaseContext context,
+            IMessageQueueAccessLayer rabbit)
         {
             _context = context;
+            _rabbit = rabbit;
         }
-        
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -33,9 +38,9 @@ namespace AspNetFileUpload.Controllers
 
             if (fotografia == null)
                 return NotFound();
-            
+
             var stream = new MemoryStream(fotografia.Content);
-            
+
             return new FileStreamResult(stream, fotografia.ContentType);
         }
 
@@ -44,7 +49,7 @@ namespace AspNetFileUpload.Controllers
         {
             if (!file.ContentType.ToLower().StartsWith("image/"))
                 return BadRequest();
-            
+
             var stream = new MemoryStream();
             file.OpenReadStream().CopyTo(stream);
 
@@ -58,6 +63,8 @@ namespace AspNetFileUpload.Controllers
             await _context.Fotografie.AddAsync(fotografia);
 
             await _context.SaveChangesAsync();
+
+            _rabbit.SendAction(new ProcessImageAction {ImageId = fotografia.Id});
 
             return Ok();
         }
