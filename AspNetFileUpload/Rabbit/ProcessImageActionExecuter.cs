@@ -4,6 +4,8 @@ using System.Linq;
 using AspNetFileUpload.Helpers;
 using AspNetFileUpload.Models;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.Primitives;
 
 namespace AspNetFileUpload.Rabbit
 {
@@ -20,43 +22,47 @@ namespace AspNetFileUpload.Rabbit
                 var stream = new MemoryStream(fotografia.Content);
                 var image = Image.Load(stream);
 
-                var newSize = ImageHelpers.GetNewSize(800, image.Width, image.Height);
-                
-                image.Mutate(x => x.Resize(newSize.Item1, newSize.Item2));
-
-                var streamMedio = new MemoryStream();
-                image.SaveAsJpeg(streamMedio);
-
-                var media = new Fotografia
+                using (var destStream = new MemoryStream())
                 {
-                    Chiave = fotografia.Chiave,
-                    Content = streamMedio.ToArray(),
-                    FileName = fotografia.FileName,
-                    ContentType = "image/jpeg",
-                    Dimensione = Dimensione.Media
-                };
-                dbContext.Fotografie.Add(media);
+                    image.Clone(x => x.Resize(new ResizeOptions()
+                    {
+                        Size = new Size(800, 800),
+                        Mode = ResizeMode.Pad
+                    })).SaveAsPng(destStream); 
 
-                Console.WriteLine($"aggiunta media: {newSize.Item1} - {newSize.Item2}");
+                    var newFoto = new Fotografia
+                    {
+                        Chiave = fotografia.Chiave,
+                        Content = destStream.ToArray(),
+                        FileName = fotografia.FileName,
+                        ContentType = "image/png",
+                        Dimensione = Dimensione.Media
+                    };
+                    dbContext.Fotografie.Add(newFoto);
 
-                newSize = ImageHelpers.GetNewSize(200, image.Width, image.Height);
+                    Console.WriteLine("aggiunta media");
+                }
                 
-                image.Mutate(x => x.Resize(newSize.Item1, newSize.Item2));
-
-                var streamPiccolo = new MemoryStream();
-                image.SaveAsJpeg(streamPiccolo);
-
-                var piccola = new Fotografia
+                using (var destStream = new MemoryStream())
                 {
-                    Chiave = fotografia.Chiave,
-                    Content = streamPiccolo.ToArray(),
-                    FileName = fotografia.FileName,
-                    ContentType = "image/jpeg",
-                    Dimensione = Dimensione.Piccola
-                };
-                dbContext.Fotografie.Add(piccola);
+                    image.Clone(x => x.Resize(new ResizeOptions()
+                    {
+                        Size = new Size(200, 200),
+                        Mode = ResizeMode.Pad
+                    })).SaveAsPng(destStream); 
 
-                Console.WriteLine($"aggiunta piccola: {newSize.Item1} - {newSize.Item2}");
+                    var newFoto = new Fotografia
+                    {
+                        Chiave = fotografia.Chiave,
+                        Content = destStream.ToArray(),
+                        FileName = fotografia.FileName,
+                        ContentType = "image/png",
+                        Dimensione = Dimensione.Piccola
+                    };
+                    dbContext.Fotografie.Add(newFoto);
+
+                    Console.WriteLine("aggiunta piccola");
+                }
 
                 dbContext.SaveChanges();
             }
