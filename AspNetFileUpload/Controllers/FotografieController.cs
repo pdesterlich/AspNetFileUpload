@@ -71,7 +71,7 @@ namespace AspNetFileUpload.Controllers
 
             await _context.SaveChangesAsync();
 
-            _rabbit.SendAction(new ProcessImageAction {Chiave = fotografia.Id});
+            _rabbit.SendAction(new ProcessImageAction {Chiave = fotografia.Chiave});
 
             return Ok();
         }
