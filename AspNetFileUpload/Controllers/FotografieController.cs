@@ -26,15 +26,15 @@ namespace AspNetFileUpload.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var fotografie = await _context.Fotografie.Select(x => new {x.Id, x.FileName}).ToListAsync();
+            var fotografie = await _context.Fotografie.Select(x => new {x.Chiave, x.Dimensione, x.FileName}).ToListAsync();
 
             return Ok(fotografie);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        [HttpGet("{chiave}/{dimensione}")]
+        public async Task<IActionResult> Get(int chiave, Dimensione dimensione)
         {
-            var fotografia = await _context.Fotografie.FirstOrDefaultAsync(x => x.Id == id);
+            var fotografia = await _context.Fotografie.FirstOrDefaultAsync(x => x.Chiave == chiave && x.Dimensione == dimensione);
 
             if (fotografia == null)
                 return NotFound();
@@ -44,9 +44,14 @@ namespace AspNetFileUpload.Controllers
             return new FileStreamResult(stream, fotografia.ContentType);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Post(IFormFile file)
+        [HttpPost("{chiave}")]
+        public async Task<IActionResult> Post(int chiave, [FromForm] IFormFile file)
         {
+            _context.Database.ExecuteSqlCommand($"DELETE FROM Fotografie WHERE Chiave = {chiave}");
+            
+            if (chiave == 0)
+                return BadRequest();
+            
             if (!file.ContentType.ToLower().StartsWith("image/"))
                 return BadRequest();
 
@@ -55,16 +60,18 @@ namespace AspNetFileUpload.Controllers
 
             var fotografia = new Fotografia
             {
+                Chiave = chiave,
                 Content = stream.ToArray(),
                 FileName = file.FileName,
-                ContentType = file.ContentType
+                ContentType = file.ContentType,
+                Dimensione = Dimensione.Originale
             };
 
             await _context.Fotografie.AddAsync(fotografia);
 
             await _context.SaveChangesAsync();
 
-            _rabbit.SendAction(new ProcessImageAction {ImageId = fotografia.Id});
+            _rabbit.SendAction(new ProcessImageAction {Chiave = fotografia.Id});
 
             return Ok();
         }

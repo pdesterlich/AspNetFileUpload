@@ -3,6 +3,6 @@
     public class ProcessImageAction: IMessageQueueBaseAction
     {
         public string Action { get; } = "ProcessImageAction";
-        public int ImageId { get; set; }
+        public int Chiave { get; set; }
     }
 }
