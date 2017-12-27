@@ -46,7 +46,7 @@ namespace AspNetFileUpload.Controllers
             if (fotografia == null)
                 return NotFound();
 
-            switch (Enum.Parse<StorageType>(_config["Files:Storage"].Default("database")))
+            switch (Enum.Parse<StorageType>(_config["Files:Storage"].Default("database"), true))
             {
                 case StorageType.Database:
                     var stream = new MemoryStream(fotografia.Content);
@@ -87,7 +87,7 @@ namespace AspNetFileUpload.Controllers
                 Dimensione = Dimensione.Originale
             };
             
-            switch (Enum.Parse<StorageType>(_config["Files:Storage"].Default("database")))
+            switch (Enum.Parse<StorageType>(_config["Files:Storage"].Default("database"), true))
             {
                 case StorageType.Database:
 
@@ -102,7 +102,7 @@ namespace AspNetFileUpload.Controllers
                     var path = Path.Combine(storagePath, "Fotografie");
                     Directory.CreateDirectory(path);
 
-                    var filePath = Path.Combine(path, $"{chiave}_{Dimensione.Originale}");
+                    var filePath = Path.Combine(path, $"{chiave}_{Dimensione.Originale}{Path.GetExtension(file.FileName)}");
                     if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
                     
                     using (var fileStream = new FileStream(filePath, FileMode.Create))
